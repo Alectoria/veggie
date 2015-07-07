@@ -147,13 +147,13 @@ merge_cov <-  function(dataframe, cover,
 
       
     tempi.1.1.2<- dataframe %>% 
-      dplyr::mutate_(layer.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
+      dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
                                                      "new_layer_veggie", 
                                                      as.character(layercol)), 
                                              plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))
     
     tempi.1.1.3 <- dataframe %>%
-      dplyr::mutate_(layer.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
+      dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
                                               "new_layer_veggie", 
                                               as.character(layercol)), 
                                       plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
@@ -199,7 +199,7 @@ merge_cov <-  function(dataframe, cover,
       
       # original rows with new layer column
       tempi.1.2.2 <-dataframe %>%
-        dplyr::mutate_(layer.new =interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
+        dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
                                           "new_layer_veggie", 
                                           layercol), 
                                   layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -207,7 +207,7 @@ merge_cov <-  function(dataframe, cover,
       
       # Operation
       tempi.1.2.3 <- dataframe %>%
-        dplyr::mutate_(layer.new =interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
+        dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
                                           "new_layer_veggie", 
                                           layercol), 
                                   layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
@@ -220,7 +220,7 @@ merge_cov <-  function(dataframe, cover,
       tempi.1.2.4 <-  tempi.1.2.2 %>%
         dplyr::left_join(tempi.1.2.3, 
                   by=c(plot, taxacol, "layer.new")) %>%
-        dplyr::mutate_(new.cov =interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                 layercol=as.name(layercol), cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
         distinct()%>%
@@ -259,11 +259,11 @@ merge_cov <-  function(dataframe, cover,
       
       # original rows with new layer column
       tempi.1.3.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
                                          "new_taxon_veggie", 
                                          layercol), 
                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                layer.new =interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
+                layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
                                           "new_layer_veggie", 
                                           layercol), 
                                   layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -271,7 +271,7 @@ merge_cov <-  function(dataframe, cover,
       
       # Operation
       tempi.1.3.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
                                          "new_taxon_veggie", 
                                          layercol), 
                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
@@ -285,7 +285,7 @@ merge_cov <-  function(dataframe, cover,
         tempi.1.3.4 <-  tempi.1.3.2 %>%
         dplyr::left_join(tempi.1.3.3, 
                   by=c(plot, taxacol, "taxon.new")) %>%
-        dplyr::mutate_(new.cov =interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                 cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
@@ -323,11 +323,11 @@ merge_cov <-  function(dataframe, cover,
       
       # original rows with new layer column
       tempi.1.4.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
                                                 "new_taxon_veggie", 
                                                 as.character(taxacol)), 
                                         layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                       layer.new =interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
+                       layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
                                                  "new_layer_veggie", 
                                                  layercol), 
                                          layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -335,11 +335,11 @@ merge_cov <-  function(dataframe, cover,
       
       # Main operation
       tempi.1.4.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
                                                 "new_taxon_veggie", 
                                                 as.character(taxacol)), 
                                         layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                       layer.new =interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
+                       layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
                                                  "new_layer_veggie", 
                                                  layercol), 
                                          layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
@@ -353,7 +353,7 @@ merge_cov <-  function(dataframe, cover,
       tempi.1.4.4 <-  tempi.1.4.2 %>%
         dplyr::left_join(tempi.1.4.3, 
                   by=c(plot, taxacol, "taxon.new", "layer.new")) %>%
-        dplyr::mutate_(new.cov =interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
                                 cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
@@ -388,13 +388,13 @@ merge_cov <-  function(dataframe, cover,
       
       
       temps.1.1.2<- dataframe %>% 
-        dplyr::mutate_(layer.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
+        dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
                                                 "new_layer_veggie", 
                                                 as.character(layercol)), 
                                         plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))
       
       temps.1.1.3 <- dataframe %>%
-        dplyr::mutate_(layer.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
+        dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
                                                 "new_layer_veggie", 
                                                 as.character(layercol)), 
                                         plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
@@ -441,7 +441,7 @@ merge_cov <-  function(dataframe, cover,
         
         # original rows with new layer column
         temps.1.2.2 <-dataframe %>%
-          dplyr::mutate_(layer.new =interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
+          dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
                                             "new_layer_veggie", 
                                             layercol), 
                                     layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -449,7 +449,7 @@ merge_cov <-  function(dataframe, cover,
         
         # Operation
         temps.1.2.3 <- dataframe %>%
-          dplyr::mutate_(layer.new =interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
+          dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
                                             "new_layer_veggie", 
                                             layercol), 
                                     layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
@@ -462,7 +462,7 @@ merge_cov <-  function(dataframe, cover,
         temps.1.2.4 <-  temps.1.2.2 %>%
           dplyr::left_join(temps.1.2.3, 
                     by=c(plot, taxacol, "layer.new")) %>%
-          dplyr::mutate_(new.cov =interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+          dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                   layercol=as.name(layercol), cover=as.name(cover))) %>%
           dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
           dplyr::distinct()%>%
@@ -497,11 +497,11 @@ merge_cov <-  function(dataframe, cover,
       
       # original rows with new layer column
       temps.1.3.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
                                          "new_taxon_veggie", 
                                          layercol), 
                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                layer.new =interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
+                layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
                                           "new_layer_veggie", 
                                           layercol), 
                                   layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -509,7 +509,7 @@ merge_cov <-  function(dataframe, cover,
       
       # Operation
       temps.1.3.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
+        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
                                          "new_taxon_veggie", 
                                          layercol), 
                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
@@ -523,7 +523,7 @@ merge_cov <-  function(dataframe, cover,
         temps.1.3.4 <-  temps.1.3.2 %>%
         dplyr::left_join(temps.1.3.3, 
                   by=c(plot, taxacol, "taxon.new")) %>%
-        dplyr::mutate_(new.cov =interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                 cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
@@ -558,11 +558,11 @@ merge_cov <-  function(dataframe, cover,
         
         # original rows with new layer column
         temps.1.4.2 <-dataframe %>%
-          dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
+          dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
                                                   "new_taxon_veggie", 
                                                   as.character(taxacol)), 
                                           layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                         layer.new =interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
+                         layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
                                                    "new_layer_veggie", 
                                                    layercol), 
                                            layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
@@ -570,11 +570,11 @@ merge_cov <-  function(dataframe, cover,
         
         # Main operation
         temps.1.4.3 <- dataframe %>%
-          dplyr::mutate_(taxon.new=interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
+          dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
                                                   "new_taxon_veggie", 
                                                   as.character(taxacol)), 
                                           layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                         layer.new =interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
+                         layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
                                                    "new_layer_veggie", 
                                                    layercol), 
                                            layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
@@ -588,7 +588,7 @@ merge_cov <-  function(dataframe, cover,
         temps.1.4.4 <-  temps.1.4.2 %>%
           dplyr::left_join(temps.1.4.3, 
                     by=c(plot, taxacol, "taxon.new", "layer.new")) %>%
-          dplyr::mutate_(new.cov =interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
+          dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
                                   cover=as.name(cover))) %>%
           dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
           dplyr::distinct()%>%
