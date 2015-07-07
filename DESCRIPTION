@@ -4,10 +4,7 @@ Version: 0.0.0.9000
 Authors@R: person("Viktoria", "Wagner", email = "wagner@sci.muni.cz", role = c("aut", "cre"))
 Description: Provides tools to manipulate vegetation data
 Depends: R (>= 3.2.0)
-Imports: 
-dplyr,
-lazyeval,
-magrittr
+Imports: dplyr,lazyeval,magrittr
 License: GPL-3
 LazyData: true
 URL: http://github.com/Alectoria/veggie
