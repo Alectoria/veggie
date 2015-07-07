@@ -135,7 +135,7 @@ merge_cov <-  function(dataframe, cover,
     # 1.1 method="independent" & is.null(layernames) & is.null(taxonname)=TRUE ---- 
     #     DONE!
     if(is.null(layernames) & is.null(taxonname)){
-    dots <- setNames(list(lazyeval::interp(~1-last(cumprod(1-x)), x=as.name(cover))),
+    dots <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
                      "new.cov")
     
     tempi.1.1.1 <- dataframe %>% 
@@ -165,8 +165,8 @@ merge_cov <-  function(dataframe, cover,
       dplyr::left_join(tempi.1.1.3, by=c(plot, taxacol)) %>%
       dplyr::group_by_(plot, taxacol,"layer.new", "new.cov") %>%
       dplyr::distinct()%>%
-      dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-      dplyr::select_(interp(~-cover, cover=as.name(cover)))
+      dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+      dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
     return(tempi.1.1.4)
     }
     
@@ -174,13 +174,13 @@ merge_cov <-  function(dataframe, cover,
     # 1.2 method="independent" & is.null(layernames)==FALSE & is.null(taxonname)=TRUE ---- 
     #     DONE!
     if(is.null(layernames) ==FALSE & is.null(taxonname)){
-      dots1 <- list(interp(~f(x,y),
+      dots1 <- list(lazyeval::interp(~f(x,y),
                            f=as.name("%in%"),
                            x=as.name(layercol),
                            y=layernames))
       
       
-      dots2 <- setNames(list(lazyeval::interp(~1-last(cumprod(1-x)), x=as.name(cover))),
+      dots2 <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
                         # column names:
                         "new.cov")
       
@@ -189,7 +189,7 @@ merge_cov <-  function(dataframe, cover,
         dplyr::filter_(.dots=dots1)%>%
         dplyr::filter_(~n()>1) %>%
         dplyr::group_by_(plot, taxacol, layercol) %>%
-        dplyr::filter_(interp(~ !n()>1))
+        dplyr::filter_(lazyeval::interp(~ !n()>1))
       
       
       ploti.temp <- tempi.1.2.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
@@ -224,8 +224,8 @@ merge_cov <-  function(dataframe, cover,
                                 layercol=as.name(layercol), cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
         distinct()%>%
-        dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(interp(~-cover, cover=as.name(cover)))
+        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
       
       return(tempi.1.2.4) 
       
@@ -237,13 +237,13 @@ merge_cov <-  function(dataframe, cover,
     if(is.null(layernames) & is.null(taxonname)==FALSE){
       
       
-      dots1 <- list(interp(~f(x,y),
+      dots1 <- list(lazyeval::interp(~f(x,y),
                            f=as.name("%in%"),
                            x=as.name(taxacol),
                            y=taxonname))
       
       
-      dots2 <- setNames(list(lazyeval::interp(~1-last(cumprod(1-x)), x=as.name(cover))),
+      dots2 <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
                         # column names:
                         "new.cov")
       
@@ -290,8 +290,8 @@ merge_cov <-  function(dataframe, cover,
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::ungroup()%>%
-        dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(interp(~-cover, cover=as.name(cover)))%>%
+        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
         dplyr::select_(quote(-taxon.new))
       
       return(tempi.1.3.4)
@@ -305,13 +305,13 @@ merge_cov <-  function(dataframe, cover,
  
     
     if(is.null(layernames) ==FALSE & is.null(taxonname)==FALSE){
-      dots <- setNames(list(lazyeval::interp(~1-last(cumprod(1-x)), x=as.name(cover))),
+      dots <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
                        "new.cov")
       
       plot <- substitute(plot)
       tempi.1.4.1 <- dataframe %>% 
         dplyr::group_by_(plot, taxacol)%>%
-        dplyr::filter_(interp(~taxacol%in%taxonname & layercol%in%layernames, 
+        dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
                               taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
         dplyr::filter_(~n()>1) 
       
@@ -344,7 +344,7 @@ merge_cov <-  function(dataframe, cover,
                                                  layercol), 
                                          layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "layer.new") %>%
-        dplyr::filter_(interp(~taxacol%in%taxonname & layercol%in%layernames, 
+        dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
                               taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
         dplyr::summarize_(.dots=dots)
       
@@ -358,8 +358,8 @@ merge_cov <-  function(dataframe, cover,
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::ungroup()%>%
-        dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(interp(~-cover, cover=as.name(cover)))%>%
+        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
         dplyr::select_(quote(-taxon.new))
       return(tempi.1.4.4)
     }
@@ -406,8 +406,8 @@ merge_cov <-  function(dataframe, cover,
         dplyr::left_join(temps.1.1.3, by=c(plot, taxacol)) %>%
         dplyr::group_by_(plot, taxacol,"layer.new", "new.cov") %>%
         dplyr::distinct()%>%
-        dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(interp(~-cover, cover=as.name(cover)))
+        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
       return(temps.1.1.4)
       
       
@@ -416,7 +416,7 @@ merge_cov <-  function(dataframe, cover,
     
       if(is.null(layernames) ==FALSE & is.null(taxonname)){
         
-        dots1 <- list(interp(~f(x,y),
+        dots1 <- list(lazyeval::interp(~f(x,y),
                              f=as.name("%in%"),
                              x=as.name(layercol),
                              y=layernames))
@@ -431,7 +431,7 @@ merge_cov <-  function(dataframe, cover,
           dplyr::filter_(.dots=dots1)%>%
           dplyr::filter_(~n()>1) %>%
           dplyr::group_by_(plot, taxacol, layercol) %>%
-          dplyr::filter_(interp(~ !n()>1))
+          dplyr::filter_(lazyeval::interp(~ !n()>1))
         
         
         plots.temp <- temps.1.2.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
@@ -466,8 +466,8 @@ merge_cov <-  function(dataframe, cover,
                                   layercol=as.name(layercol), cover=as.name(cover))) %>%
           dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
           dplyr::distinct()%>%
-          dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-          dplyr::select_(interp(~-cover, cover=as.name(cover)))
+          dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+          dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
         
         return(temps.1.2.4) 
         
@@ -475,7 +475,7 @@ merge_cov <-  function(dataframe, cover,
     
     if(is.null(layernames) & is.null(taxonname)==FALSE){
      
-      dots1 <- list(interp(~f(x,y),
+      dots1 <- list(lazyeval::interp(~f(x,y),
                            f=as.name("%in%"),
                            x=as.name(taxacol),
                            y=taxonname))
@@ -528,8 +528,8 @@ merge_cov <-  function(dataframe, cover,
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::ungroup()%>%
-        dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(interp(~-cover, cover=as.name(cover)))%>%
+        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
         dplyr::select_(quote(-taxon.new))
       
       return(temps.1.3.4)
@@ -546,7 +546,7 @@ merge_cov <-  function(dataframe, cover,
         plot <- substitute(plot)
         temps.1.4.1 <- dataframe %>% 
           dplyr::group_by_(plot, taxacol)%>%
-          dplyr::filter_(interp(~taxacol%in%taxonname & layercol%in%layernames, 
+          dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
                                 taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
           dplyr::filter_(~n()>1) 
         
@@ -579,7 +579,7 @@ merge_cov <-  function(dataframe, cover,
                                                    layercol), 
                                            layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
           dplyr::group_by_(plot, taxacol, "taxon.new", "layer.new") %>%
-          dplyr::filter_(interp(~taxacol%in%taxonname & layercol%in%layernames, 
+          dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
                                 taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
           dplyr::summarize_(.dots=dots)
         
@@ -593,8 +593,8 @@ merge_cov <-  function(dataframe, cover,
           dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
           dplyr::distinct()%>%
           dplyr::ungroup()%>%
-          dplyr::select_(interp(~-layercol, layercol=as.name(layercol)))%>%
-          dplyr::select_(interp(~-cover, cover=as.name(cover)))%>%
+          dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+          dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
           dplyr::select_(quote(-taxon.new))
         
         return(temps.1.4.4)
