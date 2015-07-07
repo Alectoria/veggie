@@ -223,7 +223,7 @@ merge_cov <-  function(dataframe, cover,
         dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                 layercol=as.name(layercol), cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
-        distinct()%>%
+        dplyr::distinct()%>%
         dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
         dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
       
