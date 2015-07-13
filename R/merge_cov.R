@@ -249,7 +249,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
       #dplyr::ungroup()%>%
       dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
     
-    return(tempi.1.1.4)
+    return(as.data.frame(tempi.1.1.4))
     
     }
     
@@ -299,7 +299,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
         dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
         dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
       
-      return(tempi.1.2.4) 
+      return(as.data.frame(tempi.1.2.4))
       
     }
 
@@ -356,7 +356,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
         dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
 
       
-      return(tempi.1.3.4)
+      return(as.data.frame(tempi.1.3.4))
       
     }   
     
@@ -416,7 +416,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
         dplyr::select_(lazyeval::interp(~-taxon.new))%>%
         dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
       
-    return(tempi.1.4.4)
+    return(as.data.frame(tempi.1.4.4))
       
       }
       
@@ -468,7 +468,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
         dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
         dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
       
-      return(temps.1.1.4) 
+      return(as.data.frame(temps.1.1.4))
       
       
       }
@@ -518,7 +518,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
           dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
           dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
         
-        return(temps.1.2.4) 
+        return(as.data.frame(temps.1.2.4))
         
       }
     
@@ -575,7 +575,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
           dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
         
         
-        return(temps.1.3.4)
+        return(as.data.frame(temps.1.3.4))
  
       } 
       
@@ -633,7 +633,7 @@ dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
           dplyr::select_(lazyeval::interp(~-taxon.new))%>%
           dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
         
-        return(temps.1.4.4)
+        return(as.data.frame(temps.1.4.4))
       }  
   }
 
