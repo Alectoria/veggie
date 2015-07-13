@@ -96,25 +96,63 @@ merge_cov <-  function(dataframe, cover,
   if(is.null(layercol)){
     stop("'layercol' not supplied")
   }
+  
+  # Check column names
+  
+  if(cover %in% colnames(dataframe)==FALSE){
+    stop("'cover' must be a column in the specified dataframe")
+  }
+  
+  if(plot %in% colnames(dataframe)==FALSE){
+    stop("'plot' must be a column in the specified dataframe")
+  }
+  
+  if(taxacol %in% colnames(dataframe)==FALSE){
+    stop("'taxacol' must be a column in the specified dataframe")
+  }
+  
+  if(layercol %in% colnames(dataframe)==FALSE){
+    stop("'layercol' must be a column in the specified dataframe")
+  }
+  
+  
 
+  # Check for duplicate column x species x layer entries
+  check.vec <- dataframe%>%
+    count_(list(plot,taxacol,layercol))%>%
+    use_series(n)%>%
+    n_distinct()
+  check.vec
+  
+  if(any(check.vec > 1)){
+    stop("Duplicate plot x taxacol x layercol entry in dataframe")
+  }
+  
+  
 # Check object types
-   if(is.numeric(cover) ==FALSE & (cover %in% colnames(dataframe))==FALSE){
+   if(is.numeric(dataframe[,cover]) ==FALSE){
      stop("'cover' must be numeric")
    }
   
-  if((is.numeric(plot) ==FALSE|is.character(plot)==FALSE|is.factor(plot)|is.integer(plot)) & (plot %in% colnames(dataframe))==FALSE){
-    stop("'plot' must be of type character, integer, numeric or factor and must be a column in the specified dataframe")
+  if((is.numeric(dataframe[,plot])|is.character(dataframe[,plot])|is.factor(dataframe[,plot])|is.integer(dataframe[,plot]))==FALSE){
+    stop("'plot' must be of type character, integer, numeric or factor")
   }
   
-  if((is.character(taxacol)==FALSE|is.factor(plot)) & (taxacol %in% colnames(dataframe))==FALSE){
-    stop("'taxacol' must be of type numeric, character or factor and must be a column in the specified dataframe")
+  if((is.character(dataframe[,taxacol])|is.factor(dataframe[,plot]))==FALSE){
+    stop("'taxacol' must be of type numeric, character or factor")
   }
   
-  
-  if((is.numeric(layercol) ==FALSE|is.character(layercol)==FALSE|is.factor(layercol)|is.integer(layercol)) & (layercol %in% colnames(dataframe))==FALSE){
-    stop("'plot' must be of type character, integer, numeric or factor and must be a column in the specified dataframe")
+
+  if(is.character(dataframe[,layercol])==FALSE){
+    message("Coercing 'layercol' to type character")
   }
   
+  dataframe[,layercol] <- as.character(dataframe[,layercol])
+  
+  
+  
+  
+  # Checking for vector type in taxonname and layernames
     
   if(is.numeric(taxonname)|is.integer(taxonname)){
       stop("'taxonname' must be of type character, factor or NULL")
@@ -124,7 +162,42 @@ merge_cov <-  function(dataframe, cover,
         stop("'taxonname' must be a single name")
   }
   
+
+# Define dots for lazyevaluation
   
+dots <- list(lazyeval::interp(~f(x,y),
+                                f=as.name("%in%"),
+                                x=as.name(layercol),
+                                y=layernames))
+  
+dots1 <- list(lazyeval::interp(~f(x,y),
+                                 f=as.name("%in%"),
+                                 x=as.name(taxacol),
+                                 y=taxonname))
+  
+dots2 <- setNames(list(lazyeval::interp(~ y,
+                                          y="new_layer_veggie")),
+                    "layer.new")
+  
+dots3 <- setNames(list(lazyeval::interp(~ y,
+                                          y="new_taxon_veggie")),
+                    "taxon.new")
+  
+dots4 <- setNames(list(lazyeval::interp(~ y,
+                                          y=as.name(layercol))),
+                    "layer.new")
+  
+  
+dots5 <- setNames(list(lazyeval::interp(~ y,
+                                           y=as.name(taxacol))),
+                     "taxon.new")
+                     
+                     
+dots6 <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
+                     "new.cov")
+                     
+dots7 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
+                     "new.cov")  
   
   
   # 1. method="independent"   ----------------------------------------------------------------------------
@@ -135,85 +208,78 @@ merge_cov <-  function(dataframe, cover,
     # 1.1 method="independent" & is.null(layernames) & is.null(taxonname)=TRUE ---- 
     #     DONE!
     if(is.null(layernames) & is.null(taxonname)){
-    dots <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
-                     "new.cov")
-    
-    tempi.1.1.1 <- dataframe %>% 
+   
+
+    # Target rows
+    tempi.1.1.0 <- dataframe %>% 
       dplyr::group_by_(plot, taxacol)%>%
       dplyr::filter_(~n()>1) 
     
-    ploti.temp <- tempi.1.1.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-    speci.temp <- tempi.1.1.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-
-      
-    tempi.1.1.2<- dataframe %>% 
-      dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
-                                                     "new_layer_veggie", 
-                                                     as.character(layercol)), 
-                                             plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))
+    # new layer names
+    tempi.1.1.1 <- tempi.1.1.0 %>%
+      dplyr::mutate_(.dots=dots2)
     
-    tempi.1.1.3 <- dataframe %>%
-      dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
-                                              "new_layer_veggie", 
-                                              as.character(layercol)), 
-                                      plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
+    # original rows with new layer column
+    tempi.1.1.2 <- dataframe %>%
+      dplyr::anti_join(tempi.1.1.0)%>%
+      dplyr::mutate_(.dots=dots4) %>%
+      dplyr::bind_rows(tempi.1.1.1)
+
+    # Operation
+    tempi.1.1.3 <- tempi.1.1.1 %>%
       dplyr::group_by_(plot, taxacol) %>%
-      dplyr::summarize_(.dots=dots) 
+      dplyr::summarize_(.dots=dots6)%>%
+      dplyr::ungroup()%>%
+      dplyr::mutate_(.dots=dots2)
     
 
     tempi.1.1.4 <- tempi.1.1.2 %>%  
-      dplyr::left_join(tempi.1.1.3, by=c(plot, taxacol)) %>%
+      dplyr::left_join(tempi.1.1.3, by=c(plot, taxacol, "layer.new")) %>%
+      dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+                         cover=as.name(cover))) %>%
       dplyr::group_by_(plot, taxacol,"layer.new", "new.cov") %>%
       dplyr::distinct()%>%
       dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
-      dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
+      dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
+      #dplyr::ungroup()%>%
+      dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
+    
     return(tempi.1.1.4)
+    
     }
+    
+    
     
     
     # 1.2 method="independent" & is.null(layernames)==FALSE & is.null(taxonname)=TRUE ---- 
     #     DONE!
     if(is.null(layernames) ==FALSE & is.null(taxonname)){
-      dots1 <- list(lazyeval::interp(~f(x,y),
-                           f=as.name("%in%"),
-                           x=as.name(layercol),
-                           y=layernames))
       
-      
-      dots2 <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
-                        # column names:
-                        "new.cov")
-      
-      tempi.1.2.1 <- dataframe %>% 
+      # Filter out rows to be manipulated
+      # original layer names
+      tempi.1.2.0 <- dataframe %>% 
         dplyr::group_by_(plot, taxacol)%>%
-        dplyr::filter_(.dots=dots1)%>%
+        dplyr::filter_(.dots=dots)%>%
         dplyr::filter_(~n()>1) %>%
-        dplyr::group_by_(plot, taxacol, layercol) %>%
-        dplyr::filter_(lazyeval::interp(~ !n()>1))
+        dplyr::ungroup()
       
-      
-      ploti.temp <- tempi.1.2.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-      speci.temp <- tempi.1.2.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-      layeri.temp <- tempi.1.2.1 %>% magrittr::extract(layercol) %>% unlist() %>% as.vector() %>% unique
-      
+      # new layer names
+      tempi.1.2.1 <- tempi.1.2.0 %>%
+        dplyr::mutate_(.dots=dots2)
       
       # original rows with new layer column
-      tempi.1.2.2 <-dataframe %>%
-        dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
-                                          "new_layer_veggie", 
-                                          layercol), 
-                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
+      tempi.1.2.2 <- dataframe %>%
+        dplyr::anti_join(tempi.1.2.0)%>%
+        dplyr::mutate_(.dots=dots4) %>%
+        dplyr::bind_rows(tempi.1.2.1)
       
-      
+ 
       # Operation
-      tempi.1.2.3 <- dataframe %>%
-        dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layeri.temp & plot%in% ploti.temp & taxacol%in% speci.temp,
-                                          "new_layer_veggie", 
-                                          layercol), 
-                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
-        dplyr::group_by_(plot, taxacol, "layer.new") %>%
-        dplyr::filter_(~layer.new=="new_layer_veggie")%>%
-        dplyr::summarize_(.dots=dots2)
+      tempi.1.2.3 <- tempi.1.2.1 %>%
+        dplyr::group_by_(plot, taxacol) %>%
+        dplyr::summarize_(.dots=dots6)%>%
+        dplyr::ungroup()%>%
+        dplyr::mutate_(.dots=dots2)
       
       
       # Stitch dataframes together
@@ -221,70 +287,59 @@ merge_cov <-  function(dataframe, cover,
         dplyr::left_join(tempi.1.2.3, 
                   by=c(plot, taxacol, "layer.new")) %>%
         dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
-                                layercol=as.name(layercol), cover=as.name(cover))) %>%
+                       layercol=as.name(layercol), cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
+        dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
       
       return(tempi.1.2.4) 
       
- 
     }
 
     
-    # 1.3 method="independent" & is.null(layernames) ==TRUE & is.null(taxonname)=FALSE ---- 
+# 1.3 method="independent" & is.null(layernames) ==TRUE & is.null(taxonname)=FALSE ---- 
     if(is.null(layernames) & is.null(taxonname)==FALSE){
+
       
-      
-      dots1 <- list(lazyeval::interp(~f(x,y),
-                           f=as.name("%in%"),
-                           x=as.name(taxacol),
-                           y=taxonname))
-      
-      
-      dots2 <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
-                        # column names:
-                        "new.cov")
-      
-      tempi.1.3.1 <- dataframe %>% 
+      # Filter out rows to be manipulated
+      # original layer names
+
+      tempi.1.3.0 <- dataframe %>% 
         dplyr::group_by_(plot, taxacol)%>%
         dplyr::filter_(.dots=dots1)%>%
-        dplyr::filter_(~n()>1) 
+        dplyr::filter_(~n()>1) %>%
+        dplyr::ungroup()
       
-      
-      ploti.temp <- tempi.1.3.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-      speci.temp <- tempi.1.3.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-      
+      # new layer names
+      tempi.1.3.1 <- tempi.1.3.0 %>%
+        dplyr::mutate_(.dots=dots2)%>%
+        dplyr::mutate_(.dots=dots3)
       
       # original rows with new layer column
-      tempi.1.3.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
-                                         "new_taxon_veggie", 
-                                         layercol), 
-                                 layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
-                                          "new_layer_veggie", 
-                                          layercol), 
-                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
+      tempi.1.3.2 <- dataframe %>%
+        # Remove target rows
+        dplyr::anti_join(tempi.1.3.0) %>%
+        dplyr::mutate_(.dots=dots4) %>%
+        dplyr::mutate_(.dots=dots5) %>%
+        # Add target rows back
+        dplyr::bind_rows(tempi.1.3.1)
       
       
       # Operation
-      tempi.1.3.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp,
-                                         "new_taxon_veggie", 
-                                         layercol), 
-                                 layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
-        dplyr::group_by_(plot, taxacol, "taxon.new") %>%
-        dplyr::filter_(~taxon.new=="new_taxon_veggie")%>%
-        dplyr::summarize_(.dots=dots2)
-        
+      tempi.1.3.3 <- tempi.1.3.1 %>%
+        dplyr::group_by_(plot, taxacol) %>%
+        #dplyr::filter_(~taxon.new=="new_taxon_veggie")%>%
+        dplyr::summarize_(.dots=dots6)%>%
+        dplyr::ungroup()%>%
+        dplyr::mutate_(.dots=dots2)
         
         
         # Stitch dataframes together
         tempi.1.3.4 <-  tempi.1.3.2 %>%
         dplyr::left_join(tempi.1.3.3, 
-                  by=c(plot, taxacol, "taxon.new")) %>%
+                  by=c(plot, taxacol, "layer.new")) %>%
         dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
                                 cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
@@ -292,7 +347,9 @@ merge_cov <-  function(dataframe, cover,
         dplyr::ungroup()%>%
         dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
         dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
-        dplyr::select_(quote(-taxon.new))
+        dplyr::select_(lazyeval::interp(~-taxon.new))%>%
+        dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
+
       
       return(tempi.1.3.4)
       
@@ -301,68 +358,62 @@ merge_cov <-  function(dataframe, cover,
     
     
     
-    # 1.4 method="independent" & is.null(layernames) ==FALSE & is.null(taxonname)=FALSE ---- 
+# 1.4 method="independent" & is.null(layernames) ==FALSE & is.null(taxonname)=FALSE ---- 
  
     
     if(is.null(layernames) ==FALSE & is.null(taxonname)==FALSE){
-      dots <- setNames(list(lazyeval::interp(~1-dplyr::last(cumprod(1-x)), x=as.name(cover))),
-                       "new.cov")
       
-      plot <- substitute(plot)
-      tempi.1.4.1 <- dataframe %>% 
+      
+      # Filter out rows to be manipulated
+      # original layer names
+      tempi.1.4.0 <- dataframe %>% 
         dplyr::group_by_(plot, taxacol)%>%
-        dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
-                              taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
-        dplyr::filter_(~n()>1) 
+        dplyr::filter_(.dots=dots)%>%
+        dplyr::filter_(.dots=dots1)%>%
+        dplyr::filter_(~n()>1) %>%
+        dplyr::ungroup()
       
-      ploti.temp <- tempi.1.4.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-      speci.temp <- tempi.1.4.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-      layeri.temp <- tempi.1.4.1 %>% magrittr::extract(layercol) %>% unlist() %>% as.vector() %>% unique
-      
-      
+      # new layer names
+      tempi.1.4.1 <- tempi.1.4.0 %>%
+        dplyr::mutate_(.dots=dots2)%>%
+        dplyr::mutate_(.dots=dots3)
       
       # original rows with new layer column
-      tempi.1.4.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
-                                                "new_taxon_veggie", 
-                                                as.character(taxacol)), 
-                                        layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                       layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
-                                                 "new_layer_veggie", 
-                                                 layercol), 
-                                         layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
+      tempi.1.4.2 <- dataframe %>%
+        # Remove target rows
+        dplyr::anti_join(tempi.1.4.0) %>%
+        dplyr::mutate_(.dots=dots4) %>%
+        dplyr::mutate_(.dots=dots5) %>%
+        # Add target rows back
+        dplyr::bind_rows(tempi.1.4.1)
       
       
-      # Main operation
-      tempi.1.4.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
-                                                "new_taxon_veggie", 
-                                                as.character(taxacol)), 
-                                        layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                       layer.new =lazyeval::interp(~ifelse(plot%in% ploti.temp & taxacol%in% speci.temp & layercol%in% layeri.temp,
-                                                 "new_layer_veggie", 
-                                                 layercol), 
-                                         layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
-        dplyr::group_by_(plot, taxacol, "taxon.new", "layer.new") %>%
-        dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
-                              taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
-        dplyr::summarize_(.dots=dots)
+      # Operation
+      tempi.1.4.3 <- tempi.1.4.1 %>%
+        dplyr::group_by_(plot, taxacol) %>%
+        #dplyr::filter_(~taxon.new=="new_taxon_veggie")%>%
+        dplyr::summarize_(.dots=dots6)%>%
+        dplyr::ungroup()%>%
+        dplyr::mutate_(.dots=dots2)
       
       
       # Stitch dataframes together
       tempi.1.4.4 <-  tempi.1.4.2 %>%
         dplyr::left_join(tempi.1.4.3, 
-                  by=c(plot, taxacol, "taxon.new", "layer.new")) %>%
-        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
-                                cover=as.name(cover))) %>%
+                         by=c(plot, taxacol, "layer.new")) %>%
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+                                                 cover=as.name(cover))) %>%
         dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::ungroup()%>%
         dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
         dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
-        dplyr::select_(quote(-taxon.new))
-      return(tempi.1.4.4)
-    }
+        dplyr::select_(lazyeval::interp(~-taxon.new))%>%
+        dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
+      
+    return(tempi.1.4.4)
+      
+      }
       
   }
   
@@ -375,232 +426,212 @@ merge_cov <-  function(dataframe, cover,
     if(is.null(layernames) & is.null(taxonname)){ 
     # setNames function specifies the column to be calculated in summarize, as well as column names
     
-      dots <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
-                        # column names:
-                        "new.cov")
       
-      temps.1.1.1 <- dataframe %>% 
+      temps.1.1.0 <- dataframe %>% 
         dplyr::group_by_(plot, taxacol)%>%
         dplyr::filter_(~n()>1) 
+
       
-      plots.temp <- temps.1.1.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-      specs.temp <- temps.1.1.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
+      # new layer names
+      temps.1.1.1 <- temps.1.1.0 %>%
+        dplyr::mutate_(.dots=dots2)
       
+      # original rows with new layer column
+      temps.1.1.2 <- dataframe %>%
+        dplyr::anti_join(temps.1.1.0)%>%
+        dplyr::mutate_(.dots=dots4) %>%
+        dplyr::bind_rows(temps.1.1.1)
       
-      temps.1.1.2<- dataframe %>% 
-        dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
-                                                "new_layer_veggie", 
-                                                as.character(layercol)), 
-                                        plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))
-      
-      temps.1.1.3 <- dataframe %>%
-        dplyr::mutate_(layer.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
-                                                "new_layer_veggie", 
-                                                as.character(layercol)), 
-                                        plot=as.name(plot), taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
+      # Operation
+      temps.1.1.3 <- temps.1.1.1 %>%
         dplyr::group_by_(plot, taxacol) %>%
-        dplyr::summarize_(.dots=dots) 
+        dplyr::summarize_(.dots=dots7)%>%
+        dplyr::ungroup()%>%
+        dplyr::mutate_(.dots=dots2)
       
       
-      temps.1.1.4 <- temps.1.1.2 %>%  
-        dplyr::left_join(temps.1.1.3, by=c(plot, taxacol)) %>%
-        dplyr::group_by_(plot, taxacol,"layer.new", "new.cov") %>%
+      
+      # Stitch dataframes together
+      temps.1.1.4 <-  temps.1.1.2 %>%
+        dplyr::left_join(temps.1.1.3, 
+                         by=c(plot, taxacol, "layer.new")) %>%
+        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+                                                 layercol=as.name(layercol), cover=as.name(cover))) %>%
+        dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
         dplyr::distinct()%>%
         dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
-      return(temps.1.1.4)
+        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
+        dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
+      
+      return(temps.1.1.4) 
       
       
       }
       
     
+# 2.2 method="sum" & is.null(layernames) ==FALSE & is.null(taxonname)==TRUE ---- 
+    
+    
       if(is.null(layernames) ==FALSE & is.null(taxonname)){
         
-        dots1 <- list(lazyeval::interp(~f(x,y),
-                             f=as.name("%in%"),
-                             x=as.name(layercol),
-                             y=layernames))
-        
-        
-        dots2 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
-                          # column names:
-                          "new.cov")
-        
-        temps.1.2.1 <- dataframe %>% 
+        temps.1.2.0 <- dataframe %>% 
           dplyr::group_by_(plot, taxacol)%>%
-          dplyr::filter_(.dots=dots1)%>%
+          dplyr::filter_(.dots=dots)%>%
           dplyr::filter_(~n()>1) %>%
-          dplyr::group_by_(plot, taxacol, layercol) %>%
-          dplyr::filter_(lazyeval::interp(~ !n()>1))
+          dplyr::ungroup()
         
-        
-        plots.temp <- temps.1.2.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-        specs.temp <- temps.1.2.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-        layers.temp <- temps.1.2.1 %>% magrittr::extract(layercol) %>% unlist() %>% as.vector() %>% unique
-        
+        # new layer names
+        temps.1.2.1 <- temps.1.2.0 %>%
+          dplyr::mutate_(.dots=dots2)
         
         # original rows with new layer column
-        temps.1.2.2 <-dataframe %>%
-          dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
-                                            "new_layer_veggie", 
-                                            layercol), 
-                                    layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
+        temps.1.2.2 <- dataframe %>%
+          dplyr::anti_join(temps.1.2.0)%>%
+          dplyr::mutate_(.dots=dots4) %>%
+          dplyr::bind_rows(temps.1.2.1)
+        
         
         
         # Operation
-        temps.1.2.3 <- dataframe %>%
-          dplyr::mutate_(layer.new =lazyeval::interp(~ifelse(layercol%in%layers.temp & plot%in% plots.temp & taxacol%in% specs.temp,
-                                            "new_layer_veggie", 
-                                            layercol), 
-                                    layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
-          dplyr::group_by_(plot, taxacol, "layer.new") %>%
-          dplyr::filter_(~layer.new=="new_layer_veggie")%>%
-          dplyr::summarize_(.dots=dots2)
+        temps.1.2.3 <- temps.1.2.1 %>%
+          dplyr::group_by_(plot, taxacol) %>%
+          dplyr::summarize_(.dots=dots7)%>%
+          dplyr::ungroup()%>%
+          dplyr::mutate_(.dots=dots2)
+        
         
         
         # Stitch dataframes together
         temps.1.2.4 <-  temps.1.2.2 %>%
           dplyr::left_join(temps.1.2.3, 
-                    by=c(plot, taxacol, "layer.new")) %>%
+                           by=c(plot, taxacol, "layer.new")) %>%
           dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
-                                  layercol=as.name(layercol), cover=as.name(cover))) %>%
+                                                   layercol=as.name(layercol), cover=as.name(cover))) %>%
           dplyr::group_by_(plot, taxacol, "layer.new", "new.cov")%>%
           dplyr::distinct()%>%
           dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
-          dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))
+          dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
+          dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
         
         return(temps.1.2.4) 
         
       }
     
+    
+# 2.3 method="sum" & is.null(layernames) ==TRUE & is.null(taxonname)=FALSE ---- 
+    
     if(is.null(layernames) & is.null(taxonname)==FALSE){
-     
-      dots1 <- list(lazyeval::interp(~f(x,y),
-                           f=as.name("%in%"),
-                           x=as.name(taxacol),
-                           y=taxonname))
-      
-      
-      dots2 <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
-                        # column names:
-                        "new.cov")
-      
-      temps.1.3.1 <- dataframe %>% 
-        dplyr::group_by_(plot, taxacol)%>%
-        dplyr::filter_(.dots=dots1)%>%
-        dplyr::filter_(~n()>1) 
-      
-      
-      plots.temp <- temps.1.3.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-      specs.temp <- temps.1.3.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-      
-      
-      # original rows with new layer column
-      temps.1.3.2 <-dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
-                                         "new_taxon_veggie", 
-                                         layercol), 
-                                 layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
-                                          "new_layer_veggie", 
-                                          layercol), 
-                                  layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
-      
-      
-      # Operation
-      temps.1.3.3 <- dataframe %>%
-        dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp,
-                                         "new_taxon_veggie", 
-                                         layercol), 
-                                 layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol))) %>%
-        dplyr::group_by_(plot, taxacol, "taxon.new") %>%
-        dplyr::filter_(~taxon.new=="new_taxon_veggie")%>%
-        dplyr::summarize_(.dots=dots2)
+
+        # Filter out rows to be manipulated
+        # original layer names
         
+        temps.1.3.0 <- dataframe %>% 
+          dplyr::group_by_(plot, taxacol)%>%
+          dplyr::filter_(.dots=dots1)%>%
+          dplyr::filter_(~n()>1) %>%
+          dplyr::ungroup()
+        
+        # new layer names
+        temps.1.3.1 <- temps.1.3.0 %>%
+          dplyr::mutate_(.dots=dots2)%>%
+          dplyr::mutate_(.dots=dots3)
+        
+        # original rows with new layer column
+        temps.1.3.2 <- dataframe %>%
+          # Remove target rows
+          dplyr::anti_join(temps.1.3.0) %>%
+          dplyr::mutate_(.dots=dots4) %>%
+          dplyr::mutate_(.dots=dots5) %>%
+          # Add target rows back
+          dplyr::bind_rows(temps.1.3.1)
+        
+        
+        # Operation
+        temps.1.3.3 <- temps.1.3.1 %>%
+          dplyr::group_by_(plot, taxacol) %>%
+          #dplyr::filter_(~taxon.new=="new_taxon_veggie")%>%
+          dplyr::summarize_(.dots=dots7)%>%
+          dplyr::ungroup()%>%
+          dplyr::mutate_(.dots=dots2)
         
         
         # Stitch dataframes together
         temps.1.3.4 <-  temps.1.3.2 %>%
-        dplyr::left_join(temps.1.3.3, 
-                  by=c(plot, taxacol, "taxon.new")) %>%
-        dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
-                                cover=as.name(cover))) %>%
-        dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
-        dplyr::distinct()%>%
-        dplyr::ungroup()%>%
-        dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
-        dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
-        dplyr::select_(quote(-taxon.new))
-      
-      return(temps.1.3.4)
-      
-      
-    } 
-      
-      if(is.null(layernames) ==FALSE & is.null(taxonname)==FALSE){
-        
-        dots <- setNames(list(lazyeval::interp(~sum(x), x=as.name(cover))),
-                          # column names:
-                          "new.cov")
-        
-        plot <- substitute(plot)
-        temps.1.4.1 <- dataframe %>% 
-          dplyr::group_by_(plot, taxacol)%>%
-          dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
-                                taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
-          dplyr::filter_(~n()>1) 
-        
-        plots.temp <- temps.1.4.1 %>%  magrittr::extract(plot) %>% unlist() %>% as.vector() %>% unique
-        specs.temp <- temps.1.4.1 %>%  magrittr::extract(taxacol) %>% unlist() %>% as.vector() %>% unique
-        layers.temp <- temps.1.4.1 %>%  magrittr::extract(layercol) %>% unlist() %>% as.vector() %>% unique
-        
-        
-        
-        # original rows with new layer column
-        temps.1.4.2 <-dataframe %>%
-          dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
-                                                  "new_taxon_veggie", 
-                                                  as.character(taxacol)), 
-                                          layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                         layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
-                                                   "new_layer_veggie", 
-                                                   layercol), 
-                                           layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))
-        
-        
-        # Main operation
-        temps.1.4.3 <- dataframe %>%
-          dplyr::mutate_(taxon.new=lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
-                                                  "new_taxon_veggie", 
-                                                  as.character(taxacol)), 
-                                          layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)),
-                         layer.new =lazyeval::interp(~ifelse(plot%in% plots.temp & taxacol%in% specs.temp & layercol%in% layers.temp,
-                                                   "new_layer_veggie", 
-                                                   layercol), 
-                                           layercol=as.name(layercol), plot=as.name(plot), taxacol=as.name(taxacol)))%>%
-          dplyr::group_by_(plot, taxacol, "taxon.new", "layer.new") %>%
-          dplyr::filter_(lazyeval::interp(~taxacol%in%taxonname & layercol%in%layernames, 
-                                taxacol=as.name(taxacol), layercol=as.name(layercol)))%>%
-          dplyr::summarize_(.dots=dots)
-        
-        
-        # Stitch dataframes together
-        temps.1.4.4 <-  temps.1.4.2 %>%
-          dplyr::left_join(temps.1.4.3, 
-                    by=c(plot, taxacol, "taxon.new", "layer.new")) %>%
-          dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new%in%"new_layer_veggie" & taxon.new%in%"new_taxon_veggie", new.cov, cover),
-                                  cover=as.name(cover))) %>%
+          dplyr::left_join(temps.1.3.3, 
+                           by=c(plot, taxacol, "layer.new")) %>%
+          dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+                                                   cover=as.name(cover))) %>%
           dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
           dplyr::distinct()%>%
           dplyr::ungroup()%>%
           dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
           dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
-          dplyr::select_(quote(-taxon.new))
+          dplyr::select_(lazyeval::interp(~-taxon.new))%>%
+          dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
+        
+        
+        return(temps.1.3.4)
+ 
+      } 
+      
+      
+      
+      
+# 2.4 method="independent" & is.null(layernames) ==FALSE & is.null(taxonname)=FALSE ---- 
+      
+      if(is.null(layernames) ==FALSE & is.null(taxonname)==FALSE){
+        
+        
+        # Filter out rows to be manipulated
+        # original layer names
+        temps.1.4.0 <- dataframe %>% 
+          dplyr::group_by_(plot, taxacol)%>%
+          dplyr::filter_(.dots=dots)%>%
+          dplyr::filter_(.dots=dots1)%>%
+          dplyr::filter_(~n()>1) %>%
+          dplyr::ungroup()
+        
+        # new layer names
+        temps.1.4.1 <- temps.1.4.0 %>%
+          dplyr::mutate_(.dots=dots2)%>%
+          dplyr::mutate_(.dots=dots3)
+        
+        # original rows with new layer column
+        temps.1.4.2 <- dataframe %>%
+          # Remove target rows
+          dplyr::anti_join(temps.1.4.0) %>%
+          dplyr::mutate_(.dots=dots4) %>%
+          dplyr::mutate_(.dots=dots5) %>%
+          # Add target rows back
+          dplyr::bind_rows(temps.1.4.1)
+        
+        
+        # Operation
+        temps.1.4.3 <- temps.1.4.1 %>%
+          dplyr::group_by_(plot, taxacol) %>%
+          dplyr::summarize_(.dots=dots7)%>%
+          dplyr::ungroup()%>%
+          dplyr::mutate_(.dots=dots2)
+        
+
+        # Stitch dataframes together
+        temps.1.4.4 <-  temps.1.4.2 %>%
+          dplyr::left_join(temps.1.4.3, 
+                           by=c(plot, taxacol, "layer.new")) %>%
+          dplyr::mutate_(new.cov =lazyeval::interp(~ifelse(layer.new=="new_layer_veggie", new.cov, cover),
+                                                   cover=as.name(cover))) %>%
+          dplyr::group_by_(plot, taxacol, "taxon.new", "new.cov")%>%
+          dplyr::distinct()%>%
+          dplyr::ungroup()%>%
+          dplyr::select_(lazyeval::interp(~-layercol, layercol=as.name(layercol)))%>%
+          dplyr::select_(lazyeval::interp(~-cover, cover=as.name(cover)))%>%
+          dplyr::select_(lazyeval::interp(~-taxon.new))%>%
+          dplyr::arrange_(lazyeval::interp(~plot, plot=as.name(plot)))
         
         return(temps.1.4.4)
       }  
   }
+
 }
- 
 
 
