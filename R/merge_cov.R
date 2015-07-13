@@ -115,6 +115,11 @@ merge_cov <-  function(dataframe, cover,
     stop("'layercol' must be a column in the specified dataframe")
   }
   
+  # Check whether data frame is a tbl_df() object
+  # Coerce into data.frame for easier handling
+  if("tbl_df"%in%class(dataframe)){
+    dataframe <- as.data.frame(dataframe)
+  }
   
 
   # Check for duplicate column x species x layer entries
@@ -134,16 +139,16 @@ merge_cov <-  function(dataframe, cover,
      stop("'cover' must be numeric")
    }
   
-  if((is.numeric(dataframe[,plot])|is.character(dataframe[,plot])|is.factor(dataframe[,plot])|is.integer(dataframe[,plot]))==FALSE){
+  if((is.numeric(dataframe[[plot]])|is.character(dataframe[[plot]])|is.factor(dataframe[[plot]])|is.integer(dataframe[[plot]]))==FALSE){
     stop("'plot' must be of type character, integer, numeric or factor")
   }
   
-  if((is.character(dataframe[,taxacol])|is.factor(dataframe[,plot]))==FALSE){
+  if((is.character(dataframe[[taxacol]])|is.factor(dataframe[[taxacol]]))==FALSE){
     stop("'taxacol' must be of type numeric, character or factor")
   }
   
 
-  if(is.character(dataframe[,layercol])==FALSE){
+  if(is.character(dataframe[[layercol]])==FALSE){
     message("Coercing 'layercol' to type character")
   }
   
