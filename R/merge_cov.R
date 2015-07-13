@@ -119,9 +119,9 @@ merge_cov <-  function(dataframe, cover,
 
   # Check for duplicate column x species x layer entries
   check.vec <- dataframe%>%
-    count_(list(plot,taxacol,layercol))%>%
-    use_series(n)%>%
-    n_distinct()
+    dplyr::count_(list(plot,taxacol,layercol))%>%
+    magrittr::use_series(n)%>%
+    dplyr::n_distinct()
   check.vec
   
   if(any(check.vec > 1)){
@@ -130,7 +130,7 @@ merge_cov <-  function(dataframe, cover,
   
   
 # Check object types
-   if(is.numeric(dataframe[,cover]) ==FALSE){
+   if(is.numeric(dataframe[[cover]]) ==FALSE){
      stop("'cover' must be numeric")
    }
   
