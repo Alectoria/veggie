@@ -35,7 +35,7 @@
 #' @keywords vegetation data, data manipulation.
 #' @examples veg.df <- data.frame(plot.ID=paste("P",c(1,1,1,1,1, 2,2,2,2,2,2,2),sep=""),
 #'                    species.name=c("Spec1", "Spec1", "Spec1","Spec2", "Spec3","Spec1", "Spec1", "Spec5", "Spec4", "Spec6","Spec6", "Spec6"),
-#'                    layer=c(6,5,4,6,6, 4,5,2,3,4,5,5),
+#'                    layer=c(6,5,4,6,6, 4,5,2,3,4,5,6),
 #'                    abund=c(0.4,0.2,0.2,0.1,0.8,0.6,0.4,0.4,0.7,0.1,0.6,0.2),
 #'                    region=c(rep("Region1",5), rep("Region2",7)))
 #'
